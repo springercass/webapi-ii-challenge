@@ -75,4 +75,38 @@ router.post("/", async (req, res) => {
 	}
 });
 
+function commentAccepted(comment) {
+	const { text } = comment;
+	return !!text;
+}
+
+router.post("/:id/comments", async (req, res) => {
+	if (!commentAccepted(req.body)) {
+		res.status(400).json({
+			error: "Please provide text for the comment."
+		});
+	} else {
+		try {
+			const post = await Posts.findById(req.params.id);
+			const comment = await Posts.insertComment({
+				...req.body,
+				post_id: req.params.id
+			});
+			const newComment = await Posts.findCommentById(comment.id);
+			if (post) {
+				res.status(201).json(newComment);
+			} else {
+				res
+					.status(404)
+					.json({ message: "The post with the specified ID does not exist." });
+			}
+		} catch (error) {
+			console.log(error);
+			res.status(500).json({
+				error: "There was an error while saving the comment to the database."
+			});
+		}
+	}
+});
+
 module.exports = router
